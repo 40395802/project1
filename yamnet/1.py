@@ -7,7 +7,6 @@ import csv                        # CSV 파일 처리 csv 모듈
 import io                         # 입출력 처리 io 모듈 
 import matplotlib.pyplot as plt   # Matplotlib 라이브러리  (데이터 시각화)
 
-
 # 모델 불러오기
 model = hub.load('https://tfhub.dev/google/yamnet/1')
 
@@ -48,18 +47,45 @@ def analyze_audio(audio_data, input_sample_rate):
     # 모델 실행
     scores, embeddings, log_mel_spectrogram = model(waveform)
     
-    # 예측된 클래스 이름
-    predicted_class = class_names[scores.numpy().mean(axis=0).argmax()]
-    print(f"감지된 소리: {predicted_class}")
+    # 평균 점수를 기반으로 상위 5개 클래스 선택
+    mean_scores = scores.numpy().mean(axis=0)
+    top_indices = mean_scores.argsort()[-5:][::-1]
+    top_classes = [(class_names[i], mean_scores[i]) for i in top_indices]
+    
+    print("상위 감지된 소리:")
+    for name, score in top_classes:
+        print(f" - {name}: {score:.3f}")
     
     # 파형 시각화
-    plt.figure(figsize=(10, 4))
+    plt.figure(figsize=(14, 6))
+    
+    # 1. 원본 파형
+    plt.subplot(3, 1, 1)
     plt.plot(waveform)
-    plt.title('Waveform')
-    plt.xlabel('Sample')
-    plt.ylabel('Amplitude')
+    plt.title("Waveform")
+    plt.xlabel("Sample")
+    plt.ylabel("Amplitude")
+    
+    # 2. 스펙트로그램 시각화
+    plt.subplot(3, 1, 2)
+    plt.imshow(log_mel_spectrogram.numpy().T, aspect='auto', origin='lower', 
+               extent=[0, len(waveform) / YAMNET_SAMPLE_RATE, 0, log_mel_spectrogram.shape[1]])
+    plt.title("Spectrogram (Log-Mel)")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Mel Frequency")
+    plt.colorbar(label="Log Magnitude")
+    
+    # 3. 상위 클래스 점수 시각화
+    plt.subplot(3, 1, 3)
+    labels, scores = zip(*top_classes)
+    plt.barh(labels, scores, color='skyblue')
+    plt.title("Top 5 Detected Classes")
+    plt.xlabel("Confidence Score")
+    plt.gca().invert_yaxis()  # 상위 클래스가 위에 오도록 순서를 뒤집음
+    
+    plt.tight_layout()
     plt.show()
-    return predicted_class
+    return top_classes
 
 # 마이크 입력 콜백 함수
 def audio_callback(indata, frames, time, status):
