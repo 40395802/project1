@@ -9,6 +9,7 @@ import joblib
 from datetime import datetime
 import matplotlib.pyplot as plt
 
+
 class AccidentSoundAnomalyDetector:
     def __init__(self):
         # YAMNet 모델 로드
@@ -22,14 +23,14 @@ class AccidentSoundAnomalyDetector:
         )
         
         self.YAMNET_SAMPLE_RATE = 16000
-        self.threshold = None  #임계값 자동 설정 
+        self.threshold = None  # 임계값 (학습 시 자동 설정)
         
     def preprocess_audio(self, audio_path):
         """오디오 파일을 YAMNet 임베딩으로 변환"""
         audio_data, sr = librosa.load(audio_path, sr=self.YAMNET_SAMPLE_RATE)
         
         # YAMNet 임베딩 추출
-        scores, embeddings, spectrogram = self.yamnet_model(audio_data)
+        _, embeddings, _ = self.yamnet_model(audio_data)
         
         # 임베딩의 평균을 계산하여 단일 벡터로 변환
         embedding_mean = tf.reduce_mean(embeddings, axis=0)
@@ -83,7 +84,7 @@ class AccidentSoundAnomalyDetector:
             )
         
         # YAMNet 임베딩 추출
-        scores, embeddings, spectrogram = self.yamnet_model(audio_data)
+        _, embeddings, _ = self.yamnet_model(audio_data)
         embedding_mean = tf.reduce_mean(embeddings, axis=0).numpy()
         
         # 이상 감지 점수 계산
@@ -91,26 +92,28 @@ class AccidentSoundAnomalyDetector:
         
         # anomaly_score 기본값 설정
         if np.isnan(anomaly_score):
-            anomaly_score = 0  #기본값을 설정
+            anomaly_score = 0  # 기본값 설정
 
         # 임계값과 비교하여 사고음 여부 판단
         is_accident = anomaly_score < self.threshold
         
-        # 신뢰도 계산 (0~1 범위로 정규화)
-        denominator = np.abs(self.threshold - anomaly_score)
-        if denominator == 0:
-            confidence = 1  # 신뢰도가 100%로 설정
+        # 신뢰도 계산 
+        if self.threshold is not None:
+            confidence = (self.threshold - anomaly_score) / np.abs(self.threshold)
         else:
-            confidence = 1 - (anomaly_score - self.threshold) / denominator
+            confidence = 0
         
-        # 신뢰도 0과 1 
         confidence = np.clip(confidence, 0, 1)
+        
+        # 유사도 계산 (Isolation Forest에서 제공하는 score를 활용)
+        similarity = 1 - np.abs(anomaly_score / self.threshold)
+        similarity = np.clip(similarity, 0, 1)
         
         # log-mel spectrogram, waveform 
         mel_spectrogram = self.compute_log_mel_spectrogram(audio_data, self.YAMNET_SAMPLE_RATE)
         waveform = audio_data  
         
-        return is_accident, confidence, mel_spectrogram, waveform
+        return is_accident, confidence, similarity, mel_spectrogram, waveform
 
     def compute_log_mel_spectrogram(self, audio_data, sample_rate):
         """log-mel spectrogram """
@@ -125,7 +128,7 @@ class AccidentSoundAnomalyDetector:
 
 
 def plot_spectrogram_and_waveform(mel_spectrogram, waveform, sample_rate):
-    """동시에 시각화하는 함수"""
+    """시각화하는 함수"""
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
     
     # waveform
@@ -157,19 +160,19 @@ def start_monitoring(detector):
             print(status)
         
         audio_data = indata.copy()
-        is_accident, confidence, mel_spectrogram, waveform = detector.predict_realtime(audio_data, SAMPLE_RATE)
+        is_accident, confidence, similarity, mel_spectrogram, waveform = detector.predict_realtime(audio_data, SAMPLE_RATE)
         
         # 현재 시간
         current_time = datetime.now().strftime("%H:%M:%S")
         
         # 상태 출력
         if is_accident:
-            print(f"\r🚨 [{current_time}] 사고음 감지! (신뢰도: {confidence:.1%})", end="")
+            print(f"\r🚨 [{current_time}] 사고음 감지! (신뢰도: {confidence:.1%}, 유사도: {similarity:.1%})", end="")
             
             # 사고음 감지 시 시각화 출력
             plot_spectrogram_and_waveform(mel_spectrogram, waveform, SAMPLE_RATE)
         else:
-            print(f"\r✅ [{current_time}] 정상 (신뢰도: {confidence:.1%})", end="")
+            print(f"\r✅ [{current_time}] 정상 (신뢰도: {confidence:.1%}, 유사도: {similarity:.1%})", end="")
     
     with sd.InputStream(
         callback=lambda *args: audio_callback(*args, detector),
