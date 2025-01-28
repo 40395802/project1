@@ -1,0 +1,20 @@
+2025-01-28 17:31:10,659 - INFO - 감지기 초기화 시작
+2025-01-28 17:31:10,661 - INFO - Using C:\Users\User\AppData\Local\Temp\tfhub_modules to cache modules.
+2025-01-28 17:31:10,701 - WARNING - From C:\Users\User\AppData\Local\Programs\Python\Python39\lib\site-packages\tensorflow_hub\resolver.py:120: The name tf.gfile.MakeDirs is deprecated. Please use tf.io.gfile.makedirs instead.
+
+2025-01-28 17:31:10,702 - WARNING - From C:\Users\User\AppData\Local\Programs\Python\Python39\lib\site-packages\tensorflow_hub\module_v2.py:126: The name tf.saved_model.load_v2 is deprecated. Please use tf.compat.v2.saved_model.load instead.
+
+2025-01-28 17:31:12,163 - INFO - Fingerprint not found. Saved model loading will continue.
+2025-01-28 17:31:12,163 - INFO - path_and_singleprint metric could not be logged. Saved model loading will continue.
+2025-01-28 17:31:12,165 - INFO - 모델 학습 시작
+2025-01-28 17:31:12,165 - ERROR - 오류 발생: [WinError 3] 지정된 경로를 찾을 수 없습니다: './dataset/accident/'
+2025-01-28 17:32:10,238 - INFO - 감지기 초기화 시작
+2025-01-28 17:32:10,238 - INFO - Using C:\Users\User\AppData\Local\Temp\tfhub_modules to cache modules.
+2025-01-28 17:32:10,278 - WARNING - From C:\Users\User\AppData\Local\Programs\Python\Python39\lib\site-packages\tensorflow_hub\resolver.py:120: The name tf.gfile.MakeDirs is deprecated. Please use tf.io.gfile.makedirs instead.
+
+2025-01-28 17:32:10,279 - WARNING - From C:\Users\User\AppData\Local\Programs\Python\Python39\lib\site-packages\tensorflow_hub\module_v2.py:126: The name tf.saved_model.load_v2 is deprecated. Please use tf.compat.v2.saved_model.load instead.
+
+2025-01-28 17:32:11,745 - INFO - Fingerprint not found. Saved model loading will continue.
+2025-01-28 17:32:11,746 - INFO - path_and_singleprint metric could not be logged. Saved model loading will continue.
+2025-01-28 17:32:11,746 - INFO - 모델 학습 시작
+2025-01-28 17:32:11,746 - ERROR - 오류 발생: [WinError 123] 파일 이름, 디렉터리 이름 또는 볼륨 레이블 구문이 잘못되었습니다: 'yamnet\x07ccident_detection'
