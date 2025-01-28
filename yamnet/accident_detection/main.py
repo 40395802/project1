@@ -1,7 +1,7 @@
 import logging
 from anomaly_detector import AccidentSoundAnomalyDetector, start_monitoring
 
-# 로깅 설정
+# 디버깅
 logging.basicConfig(filename="debug.log", level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def main():
@@ -11,17 +11,18 @@ def main():
         detector = AccidentSoundAnomalyDetector()
 
         logging.info("모델 학습 시작")
-        # 모델 학습 (처음 한 번만 실행)
+        # 모델 학습
         detector.train("yamnet/accident_detection/dataset/accident")
 
         logging.info("모니터링 시작")
         # 모니터링 시작
         start_monitoring(detector)
-
+        
+    # 디버깅
     except Exception as e:
         logging.error(f"오류 발생: {e}")
         print(f"오류 발생: {e}")
-        raise  # 예외를 다시 발생시켜, 상위 코드에서 처리할 수 있도록 함
+        raise  
 
 if __name__ == "__main__":
     main()
