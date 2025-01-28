@@ -7,15 +7,16 @@ import os
 from sklearn.ensemble import IsolationForest
 import joblib
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 class AccidentSoundAnomalyDetector:
     def __init__(self):
         # YAMNet 모델 로드
         self.yamnet_model = hub.load('https://tfhub.dev/google/yamnet/1')
         
-        # Isolation Forest 모델 (이상 감지용)
+        # Isolation Forest 모델 (사고 감지용)
         self.anomaly_detector = IsolationForest(
-            contamination=0.1,  # 이상치 비율 예상값
+            contamination=0.1,  
             random_state=42,
             n_estimators=100
         )
@@ -85,18 +86,66 @@ class AccidentSoundAnomalyDetector:
         scores, embeddings, spectrogram = self.yamnet_model(audio_data)
         embedding_mean = tf.reduce_mean(embeddings, axis=0).numpy()
         
-        
         # 이상 감지 점수 계산
         anomaly_score = self.anomaly_detector.score_samples([embedding_mean])[0]
         
+        # anomaly_score 기본값 설정
+        if np.isnan(anomaly_score):
+            anomaly_score = 0  #기본값을 설정
+
         # 임계값과 비교하여 사고음 여부 판단
         is_accident = anomaly_score < self.threshold
         
-        # 신뢰도 점수 계산 (0~1 범위로 정규화)
-        confidence = 1 - (anomaly_score - self.anomaly_detector.offset_) / (np.abs(self.threshold - self.anomaly_detector.offset_))
+        # 신뢰도 계산 (0~1 범위로 정규화)
+        denominator = np.abs(self.threshold - anomaly_score)
+        if denominator == 0:
+            confidence = 1  # 신뢰도가 100%로 설정
+        else:
+            confidence = 1 - (anomaly_score - self.threshold) / denominator
+        
+        # 신뢰도 0과 1 
         confidence = np.clip(confidence, 0, 1)
         
-        return is_accident, confidence
+        # log-mel spectrogram, waveform 
+        mel_spectrogram = self.compute_log_mel_spectrogram(audio_data, self.YAMNET_SAMPLE_RATE)
+        waveform = audio_data  
+        
+        return is_accident, confidence, mel_spectrogram, waveform
+
+    def compute_log_mel_spectrogram(self, audio_data, sample_rate):
+        """log-mel spectrogram """
+       
+        D = librosa.stft(audio_data)
+        
+        mel_spectrogram = librosa.feature.melspectrogram(S=np.abs(D), sr=sample_rate, n_mels=128)
+        
+        log_mel_spectrogram = librosa.power_to_db(mel_spectrogram)
+        
+        return log_mel_spectrogram
+
+
+def plot_spectrogram_and_waveform(mel_spectrogram, waveform, sample_rate):
+    """동시에 시각화하는 함수"""
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    
+    # waveform
+    ax1.plot(np.linspace(0, len(waveform) / sample_rate, len(waveform)), waveform)
+    ax1.set_title("Waveform (Time Domain)")
+    ax1.set_xlabel("Time (s)")
+    ax1.set_ylabel("Amplitude")
+    ax1.grid(True)
+    
+    # mel spectrogram
+    img = ax2.imshow(mel_spectrogram, aspect='auto', origin='lower', cmap='inferno', extent=[0, mel_spectrogram.shape[-1] / sample_rate, 0, sample_rate / 2])
+    ax2.set_title("Log-Mel Spectrogram")
+    ax2.set_xlabel("Time (s)")
+    ax2.set_ylabel("Frequency (Hz)")
+    fig.colorbar(img, ax=ax2, format="%+2.0f dB")  
+    ax2.grid(True)
+    
+    plt.tight_layout()  
+    plt.show()
+
 
 def start_monitoring(detector):
     """실시간 모니터링 시작"""
@@ -108,7 +157,7 @@ def start_monitoring(detector):
             print(status)
         
         audio_data = indata.copy()
-        is_accident, confidence = detector.predict_realtime(audio_data, SAMPLE_RATE)
+        is_accident, confidence, mel_spectrogram, waveform = detector.predict_realtime(audio_data, SAMPLE_RATE)
         
         # 현재 시간
         current_time = datetime.now().strftime("%H:%M:%S")
@@ -116,6 +165,9 @@ def start_monitoring(detector):
         # 상태 출력
         if is_accident:
             print(f"\r🚨 [{current_time}] 사고음 감지! (신뢰도: {confidence:.1%})", end="")
+            
+            # 사고음 감지 시 시각화 출력
+            plot_spectrogram_and_waveform(mel_spectrogram, waveform, SAMPLE_RATE)
         else:
             print(f"\r✅ [{current_time}] 정상 (신뢰도: {confidence:.1%})", end="")
     
