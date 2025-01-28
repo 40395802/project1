@@ -22,7 +22,7 @@ class AccidentSoundAnomalyDetector:
         )
         
         self.YAMNET_SAMPLE_RATE = 16000
-        self.threshold = None  # 자동으로 설정될 임계값
+        self.threshold = None  #임계값 자동 설정 
         
     def preprocess_audio(self, audio_path):
         """오디오 파일을 YAMNet 임베딩으로 변환"""
