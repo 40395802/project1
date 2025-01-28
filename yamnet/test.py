@@ -41,7 +41,7 @@ class AccidentSoundAnomalyDetector:
         
         # 사고음 파일 처리
         for filename in os.listdir(accident_dir):
-            if filename.endswith(('.wav', '.mp3')):
+            if filename.endswith(('yamnet\\1.wav', 'yamnet\\2.wav')):
                 audio_path = os.path.join(accident_dir, filename)
                 embedding = self.preprocess_audio(audio_path)
                 X.append(embedding)
@@ -130,7 +130,6 @@ def start_monitoring(detector):
                 pass
         except KeyboardInterrupt:
             print("\n모니터링을 종료합니다.")
-
 # 사용 예시:
 """
 # 감지기 초기화
