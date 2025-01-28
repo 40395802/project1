@@ -85,6 +85,7 @@ class AccidentSoundAnomalyDetector:
         scores, embeddings, spectrogram = self.yamnet_model(audio_data)
         embedding_mean = tf.reduce_mean(embeddings, axis=0).numpy()
         
+        
         # 이상 감지 점수 계산
         anomaly_score = self.anomaly_detector.score_samples([embedding_mean])[0]
         
@@ -130,18 +131,3 @@ def start_monitoring(detector):
                 pass
         except KeyboardInterrupt:
             print("\n모니터링을 종료합니다.")
-
-# 사용 예시:
-"""
-# 감지기 초기화
-detector = AccidentSoundAnomalyDetector()
-
-# 학습 (처음 한 번만)
-detector.train("./dataset/accident/")
-
-# 또는 저장된 모델 로드
-detector.load_model()
-
-# 모니터링 시작
-start_monitoring(detector)
-"""
