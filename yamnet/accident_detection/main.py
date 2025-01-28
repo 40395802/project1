@@ -12,7 +12,7 @@ def main():
 
         logging.info("모델 학습 시작")
         # 모델 학습 (처음 한 번만 실행)
-        detector.train("yamnet\accident_detection")
+        detector.train("yamnet/accident_detection/dataset/accident")
 
         logging.info("모니터링 시작")
         # 모니터링 시작
