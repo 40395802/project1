@@ -7,6 +7,7 @@ import csv                        # CSV 파일 처리 csv 모듈
 import io                         # 입출력 처리 io 모듈 
 import matplotlib.pyplot as plt   # Matplotlib 라이브러리  (데이터 시각화)
 
+
 # 모델 불러오기
 model = hub.load('https://tfhub.dev/google/yamnet/1')
 
