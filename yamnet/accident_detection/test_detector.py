@@ -101,3 +101,6 @@ class TestAccidentSoundDetector(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
+    
+    
+    #실행이 안됌 수정 필요
