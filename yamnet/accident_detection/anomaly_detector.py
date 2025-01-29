@@ -244,6 +244,7 @@ class AudioMonitor:
         self.config = config
         self.is_running = False
         self.logger = logging.getLogger(__name__)
+        self.process_thread = None  # 오디오 처리 스레드 저장용
     
     def audio_callback(self, indata: np.ndarray, frames: int, time, status) -> None:
         """오디오 콜백 함수"""
@@ -294,8 +295,8 @@ class AudioMonitor:
             self.is_running = True
             
             # 오디오 처리 스레드 시작
-            process_thread = Thread(target=self.process_audio)
-            process_thread.start()
+            self.process_thread = Thread(target=self.process_audio)
+            self.process_thread.start()
             
             with sd.InputStream(
                 callback=self.audio_callback,
@@ -314,4 +315,11 @@ class AudioMonitor:
             self.logger.error(f"모니터링 시작 실패: {e}")
             self.stop()
             raise
+    
+    def stop(self) -> None:
+        """모니터링 중지"""
+        self.is_running = False
+        if self.process_thread is not None:
+            self.process_thread.join()  # 스레드가 종료될 때까지 대기
+        print("\n모니터링 중지")
     
